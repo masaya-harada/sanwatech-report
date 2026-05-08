@@ -1,4 +1,4 @@
-const CACHE = 'sanwatech-v4';
+const CACHE = 'sanwatech-v5';
 const FILES = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
