@@ -714,7 +714,14 @@ async function downloadPDF() {
   const canvas = await html2canvas(layout, { scale:2, useCORS:true, backgroundColor:'#ffffff' });
   const imgData = canvas.toDataURL('image/jpeg', 0.95);
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
+  const doc = new jsPDF({
+    orientation: 'p', unit: 'mm', format: 'a4',
+    encryption: {
+      userPassword: '',
+      ownerPassword: 'sanwatech2024',
+      userPermissions: ['print', 'print-high-quality']
+    }
+  });
   const pageW = 210, pageH = 297;
   const imgH = canvas.height * pageW / canvas.width;
   let posY = 0, page = 0;
