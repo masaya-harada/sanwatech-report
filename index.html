@@ -142,6 +142,12 @@
     .form-row { grid-template-columns: 1fr; }
     .form-row-3 { grid-template-columns: 1fr 1fr; }
   }
+  /* LIGHTBOX */
+  .lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:300; align-items:center; justify-content:center; }
+  .lightbox.active { display:flex; }
+  .lightbox img { max-width:95vw; max-height:90vh; border-radius:8px; object-fit:contain; }
+  .lightbox-close { position:fixed; top:16px; right:20px; color:white; font-size:36px; cursor:pointer; line-height:1; z-index:301; }
+
   /* MODAL */
   .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; overflow-y:auto; padding:16px; }
   .modal-overlay.active { display:block; }
@@ -152,6 +158,12 @@
 </style>
 </head>
 <body>
+
+<!-- ライトボックス -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img id="lightbox-img" src="" alt="">
+</div>
 
 <!-- PDFプレビューモーダル -->
 <div class="modal-overlay" id="pdf-modal">
@@ -273,20 +285,8 @@
 
     <div class="card">
       <div class="card-title">📷 施工写真</div>
-      <div class="section-label">施工前</div>
-      <div class="photo-grid" id="photos-before">
-        <div class="photo-thumb photo-add-btn" onclick="triggerPhoto('before')">
-          <div class="icon">📷</div><div>追加</div>
-        </div>
-      </div>
+      <div class="photo-grid" id="photos-before"></div>
       <input type="file" id="photo-input-before" accept="image/*" capture="environment" style="display:none" multiple onchange="addPhotos('before',this)">
-      <div class="section-label" style="margin-top:12px;">施工後</div>
-      <div class="photo-grid" id="photos-after">
-        <div class="photo-thumb photo-add-btn" onclick="triggerPhoto('after')">
-          <div class="icon">📷</div><div>追加</div>
-        </div>
-      </div>
-      <input type="file" id="photo-input-after" accept="image/*" capture="environment" style="display:none" multiple onchange="addPhotos('after',this)">
     </div>
 
     <div class="card">
@@ -616,12 +616,17 @@ function renderPhotos(type) {
   const grid = document.getElementById('photos-'+type);
   grid.innerHTML = photos[type].map((src,i)=>`
     <div class="photo-thumb">
-      <img src="${src}">
+      <img src="${src}" onclick="openLightbox('${type}',${i})" style="cursor:zoom-in;">
       <button class="del-photo" onclick="removePhoto('${type}',${i})">✕</button>
     </div>
   `).join('') + `<div class="photo-thumb photo-add-btn" onclick="triggerPhoto('${type}')"><div class="icon">📷</div><div>追加</div></div>`;
 }
 function removePhoto(type,i) { photos[type].splice(i,1); renderPhotos(type); }
+function openLightbox(type,i) {
+  document.getElementById('lightbox-img').src = photos[type][i];
+  document.getElementById('lightbox').classList.add('active');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
 
 // PDF
 async function exportPDF() {
@@ -690,8 +695,7 @@ async function exportPDF() {
         <tr>${td('保証期間')}${tv(d.warrantyY)}${td('次回点検予定')}${tv(d.nextDate)}</tr>
       </table>
       ${workTable}
-      ${makePhotoHtml(d.photos.before||[],'【施工前写真】')}
-      ${makePhotoHtml(d.photos.after||[],'【施工後写真】')}
+      ${makePhotoHtml([...(d.photos.before||[]),...(d.photos.after||[])],'【施工写真】')}
       ${signHtml}
       <div style="margin-top:24px;padding-top:10px;border-top:1px solid #ccc;font-size:11px;color:#999;display:flex;justify-content:space-between;">
         <span>出力日: ${new Date().toLocaleDateString('ja-JP')}</span>
