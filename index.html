@@ -321,7 +321,7 @@
 </main>
 
 <!-- PDF用隠しレイアウト -->
-<div id="pdf-layout" style="position:fixed;left:-9999px;top:0;width:1000px;background:white;font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;font-size:13px;color:#2c3e50;"></div>
+<div id="pdf-layout" style="position:fixed;left:-9999px;top:0;width:480px;background:white;font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;font-size:13px;color:#2c3e50;"></div>
 
 <!-- 下書き保存・PDF出力ボタン -->
 <div class="bottom-bar" id="bottom-form">
@@ -374,8 +374,7 @@ function addWorkRow(data={}) {
     <div class="form-group"><label>対象鳥種</label>${makeSelect(BIRDS,'bird','wr-bird')}</div>
     <div class="form-group"><label>作業内容（複数選択可）</label><div class="check-group">${makeWorkTypeChecks(selected)}</div></div>
     <div class="form-group"><label>使用資材・薬剤</label>${makeSelect(MATERIALS,'mat','wr-mat')}</div>
-    <div class="form-group"><label>環境整備</label>${makeSelect(ENV_STATUS,'env','wr-env')}</div>
-    <div class="form-group"><label>施工箇所詳細</label><input type="text" class="wr-detail" value="${data.detail||''}"></div>
+    <div class="form-group"><label>施工箇所詳細</label><textarea class="wr-detail" rows="2" style="resize:vertical;min-height:60px;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${data.detail||''}</textarea></div>
     <div class="form-row">
       <div class="form-group"><label>調査法</label>${makeSelect(SURVEY_METHODS,'survey','wr-survey')}</div>
       <div class="form-group"><label>飛来状況<span style="font-size:11px;color:#888;font-weight:normal;">（作業日の状況です）</span></label>${makeSelect(BIRD_STATUS,'status','wr-status')}</div>
@@ -384,7 +383,6 @@ function addWorkRow(data={}) {
   document.getElementById('work-rows').appendChild(div);
   if(data.bird) div.querySelector('.wr-bird').value = data.bird;
   if(data.mat) div.querySelector('.wr-mat').value = data.mat;
-  if(data.env) div.querySelector('.wr-env').value = data.env;
   if(data.survey) div.querySelector('.wr-survey').value = data.survey;
   if(data.status) div.querySelector('.wr-status').value = data.status;
 }
@@ -400,7 +398,6 @@ function getWorkRows() {
     bird: row.querySelector('.wr-bird').value,
     work: [...row.querySelectorAll('.wr-work-cb:checked')].map(c=>c.value),
     mat: row.querySelector('.wr-mat').value,
-    env: row.querySelector('.wr-env').value,
     detail: row.querySelector('.wr-detail').value,
     survey: row.querySelector('.wr-survey').value,
     status: row.querySelector('.wr-status').value,
@@ -647,25 +644,20 @@ async function exportPDF() {
 
   const workTable = (d.workRows&&d.workRows.length) ? `
     <div style="margin-top:18px;">
-      <div style="font-size:14px;font-weight:bold;color:#1a5fa8;margin-bottom:6px;">■ 作業明細</div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead><tr style="background:#1a5fa8;color:white;">
-          <th style="padding:7px 8px;border:1px solid #aaa;text-align:left;">作業場所</th>
-          <th style="padding:7px 8px;border:1px solid #aaa;text-align:left;">対象鳥種</th>
-          <th style="padding:7px 8px;border:1px solid #aaa;text-align:left;">作業内容</th>
-          <th style="padding:7px 8px;border:1px solid #aaa;text-align:left;">使用資材</th>
-          <th style="padding:7px 8px;border:1px solid #aaa;text-align:left;">飛来状況<br><span style="font-size:10px;opacity:0.85;">（作業日の状況）</span></th>
-        </tr></thead>
-        <tbody>${(d.workRows).map((r,i)=>`
-          <tr style="background:${i%2===0?'#f0f4f8':'white'}">
-            <td style="padding:7px 8px;border:1px solid #ccc;">${r.place||''}</td>
-            <td style="padding:7px 8px;border:1px solid #ccc;">${r.bird||''}</td>
-            <td style="padding:7px 8px;border:1px solid #ccc;">${Array.isArray(r.work)?r.work.join('<br>'):(r.work||'')}</td>
-            <td style="padding:7px 8px;border:1px solid #ccc;">${r.mat||''}</td>
-            <td style="padding:7px 8px;border:1px solid #ccc;">${r.status||''}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
+      <div style="font-size:15px;font-weight:bold;color:#1a5fa8;margin-bottom:8px;">■ 作業明細</div>
+      ${(d.workRows).map((r,i)=>`
+        <div style="background:${i%2===0?'#f0f4f8':'white'};border:1px solid #ccc;border-radius:6px;padding:12px;margin-bottom:8px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;">
+            ${r.place?`<div><span style="color:#1a5fa8;font-weight:bold;">作業場所：</span>${r.place}</div>`:''}
+            ${r.bird?`<div><span style="color:#1a5fa8;font-weight:bold;">対象鳥種：</span>${r.bird}</div>`:''}
+            ${r.mat?`<div><span style="color:#1a5fa8;font-weight:bold;">使用資材：</span>${r.mat}</div>`:''}
+            ${r.status?`<div><span style="color:#1a5fa8;font-weight:bold;">飛来状況：</span>${r.status}</div>`:''}
+          </div>
+          ${(Array.isArray(r.work)&&r.work.length)?`<div style="margin-top:8px;font-size:13px;"><span style="color:#1a5fa8;font-weight:bold;">作業内容：</span>${r.work.join('　')}</div>`:''}
+          ${r.detail?`<div style="margin-top:8px;font-size:13px;"><span style="color:#1a5fa8;font-weight:bold;">施工箇所詳細：</span>${r.detail}</div>`:''}
+          ${r.survey?`<div style="margin-top:4px;font-size:13px;"><span style="color:#1a5fa8;font-weight:bold;">調査法：</span>${r.survey}</div>`:''}
+        </div>
+      `).join('')}
     </div>` : '';
 
   const signHtml = d.signature ? `
