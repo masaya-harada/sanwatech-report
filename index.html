@@ -625,70 +625,67 @@ function openLightbox(type,i) {
 function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
 
 // PDF
+function row(label, val) {
+  return val ? `<div style="margin-bottom:10px;"><div style="font-size:12px;color:#7f8c8d;margin-bottom:2px;">${label}</div><div style="font-size:15px;">${val}</div></div>` : '';
+}
+function row2(l1,v1,l2,v2) {
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+    ${row(l1,v1)}${row(l2,v2)}</div>`;
+}
+function card(title, body) {
+  return `<div style="background:white;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    <div style="font-size:15px;font-weight:bold;color:#1a5fa8;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e8f4fd;">${title}</div>
+    ${body}</div>`;
+}
+
 async function exportPDF() {
   const d = getFormData();
-  const birds = (d.birds||[]).join('・') + (d.birdOther ? `（${d.birdOther}）` : '');
-  const content = (d.regular ? '定期 ' : '') + (d.temp ? '臨時' : '');
-  const td = (label) => `<td style="background:#f0f4f8;padding:7px 10px;border:1px solid #ccc;font-weight:bold;color:#1a5fa8;white-space:nowrap;">${label}</td>`;
-  const tv = (val, span='') => `<td ${span} style="padding:7px 10px;border:1px solid #ccc;">${val||''}</td>`;
+  const birds = (d.birds||[]).join('・') + (d.birdOther?`（${d.birdOther}）`:'');
+  const content = (d.regular?'定期 ':'')+(d.temp?'臨時':'');
 
-  const makePhotoHtml = (list, label) => {
-    if(!list.length) return '';
-    return `<div style="margin-top:18px;">
-      <div style="font-size:14px;font-weight:bold;color:#1a5fa8;margin-bottom:8px;">${label}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${list.slice(0,6).map(src=>`<img src="${src}" style="width:220px;height:160px;object-fit:cover;border-radius:4px;border:1px solid #ccc;">`).join('')}
-      </div></div>`;
-  };
+  const workCards = (d.workRows||[]).map((r,i) => `
+    <div style="background:#f0f4f8;border-radius:10px;padding:14px;margin-bottom:12px;border:1.5px solid #bdc3c7;">
+      <div style="font-weight:bold;color:#1a5fa8;font-size:13px;margin-bottom:8px;">作業 ${i+1}</div>
+      ${row('作業場所・名称', r.place)}
+      ${r.bird?row('対象鳥種', r.bird):''}
+      ${(Array.isArray(r.work)&&r.work.length)?`<div style="margin-bottom:10px;"><div style="font-size:12px;color:#7f8c8d;margin-bottom:2px;">作業内容</div>${r.work.map(w=>`<div style="background:#1a5fa8;color:white;display:inline-block;padding:4px 10px;border-radius:8px;font-size:13px;margin:2px;">${w}</div>`).join('')}</div>`:''}
+      ${row('使用資材・薬剤', r.mat)}
+      ${row('施工箇所詳細', r.detail)}
+      ${row2('調査法',r.survey,'飛来状況（作業日）',r.status)}
+    </div>`).join('');
 
-  const workTable = (d.workRows&&d.workRows.length) ? `
-    <div style="margin-top:18px;">
-      <div style="font-size:15px;font-weight:bold;color:#1a5fa8;margin-bottom:8px;">■ 作業明細</div>
-      ${(d.workRows).map((r,i)=>`
-        <div style="background:${i%2===0?'#f0f4f8':'white'};border:1px solid #ccc;border-radius:6px;padding:12px;margin-bottom:8px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;">
-            ${r.place?`<div><span style="color:#1a5fa8;font-weight:bold;">作業場所：</span>${r.place}</div>`:''}
-            ${r.bird?`<div><span style="color:#1a5fa8;font-weight:bold;">対象鳥種：</span>${r.bird}</div>`:''}
-            ${r.mat?`<div><span style="color:#1a5fa8;font-weight:bold;">使用資材：</span>${r.mat}</div>`:''}
-            ${r.status?`<div><span style="color:#1a5fa8;font-weight:bold;">飛来状況：</span>${r.status}</div>`:''}
-          </div>
-          ${(Array.isArray(r.work)&&r.work.length)?`<div style="margin-top:8px;font-size:13px;"><span style="color:#1a5fa8;font-weight:bold;">作業内容：</span>${r.work.join('　')}</div>`:''}
-          ${r.detail?`<div style="margin-top:8px;font-size:13px;"><span style="color:#1a5fa8;font-weight:bold;">施工箇所詳細：</span>${r.detail}</div>`:''}
-          ${r.survey?`<div style="margin-top:4px;font-size:13px;"><span style="color:#1a5fa8;font-weight:bold;">調査法：</span>${r.survey}</div>`:''}
-        </div>
-      `).join('')}
-    </div>` : '';
+  const photoHtml = (()=>{
+    const all = [...(d.photos.before||[]),...(d.photos.after||[])];
+    if(!all.length) return '';
+    return card('📷 施工写真', `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${all.slice(0,6).map(src=>`<img src="${src}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;">`).join('')}</div>`);
+  })();
 
-  const signHtml = d.signature ? `
-    <div style="margin-top:18px;">
-      <div style="font-size:14px;font-weight:bold;color:#1a5fa8;margin-bottom:6px;">■ お客様サイン</div>
-      <div style="border:2px solid #ccc;border-radius:6px;padding:6px;display:inline-block;">
-        <img src="${d.signature}" style="height:80px;display:block;">
-      </div>
-    </div>` : '';
+  const signHtml = d.signature ? card('✍️ お客様サイン',
+    `<div style="border:1.5px solid #bdc3c7;border-radius:8px;padding:8px;background:white;">
+      <img src="${d.signature}" style="width:100%;max-height:100px;object-fit:contain;display:block;"></div>`) : '';
 
   const layout = document.getElementById('pdf-layout');
   layout.innerHTML = `
-    <div style="padding:30px 36px;box-sizing:border-box;">
-      <div style="background:#1a5fa8;color:white;padding:16px 20px;border-radius:8px;margin-bottom:20px;">
-        <div style="font-size:22px;font-weight:bold;">害鳥防除作業報告書</div>
-        <div style="font-size:12px;margin-top:4px;opacity:0.85;">合同会社サンワテック　〒470-1125 愛知県豊明市三崎町中ノ坪20-10　TEL:0562-85-3882</div>
+    <div style="background:#f0f4f8;padding:16px;font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;color:#2c3e50;">
+      <div style="background:#1a5fa8;color:white;padding:14px 16px;border-radius:10px;margin-bottom:14px;">
+        <div style="font-size:18px;font-weight:bold;">🦅 害鳥防除作業報告書</div>
+        <div style="font-size:11px;opacity:0.85;margin-top:3px;">合同会社サンワテック　〒470-1125 愛知県豊明市三崎町中ノ坪20-10　TEL:0562-85-3882</div>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <tr>${td('法人名・施主名')}${tv((d.client||'')+'　様')}${td('作業日')}${tv(d.date)}</tr>
-        <tr>${td('施工場所名')}${tv(d.place)}${td('作業時間')}${tv((d.timeStart||'')+'〜'+(d.timeEnd||''))}</tr>
-        <tr>${td('住所')}${tv(d.address,'colspan="3"')}</tr>
-        <tr>${td('TEL')}${tv(d.tel)}${td('ご確認者')}${tv(d.confirm)}</tr>
-        <tr>${td('担当者')}${tv(d.staff)}${td('実施者')}${tv(d.worker)}</tr>
-        <tr>${td('防除監督者')}${tv(d.supervisor)}${td('内容')}${tv(content)}</tr>
-        <tr>${td('防除対象')}${tv(birds,'colspan="3"')}</tr>
-        ${d.note?`<tr>${td('特記事項')}${tv(d.note,'colspan="3"')}</tr>`:''}
-        <tr>${td('保証期間')}${tv(d.warrantyY)}${td('次回点検予定')}${tv(d.nextDate)}</tr>
-      </table>
-      ${workTable}
-      ${makePhotoHtml([...(d.photos.before||[]),...(d.photos.after||[])],'【施工写真】')}
+      ${card('🏢 基本情報', `
+        ${row('法人名・施主名', `<b style="font-size:16px;">${(d.client||'')+'　様'}</b>`)}
+        ${row2('施工場所名',d.place,'作業日',d.date)}
+        ${row('住所',d.address)}
+        ${row2('TEL',d.tel,'ご確認者',d.confirm)}
+        ${row2('担当者',d.staff,'実施者',d.worker)}
+        ${row('防除監督者',d.supervisor)}
+        ${row2('内容',content,'防除対象',birds)}
+        ${row2('保証期間',d.warrantyY,'次回点検予定',d.nextDate)}
+        ${d.note?row('特記事項',d.note):''}
+      `)}
+      ${workCards ? card('🔧 作業明細', workCards) : ''}
+      ${photoHtml}
       ${signHtml}
-      <div style="margin-top:24px;padding-top:10px;border-top:1px solid #ccc;font-size:11px;color:#999;display:flex;justify-content:space-between;">
+      <div style="padding-top:10px;border-top:1px solid #ccc;font-size:11px;color:#7f8c8d;display:flex;justify-content:space-between;">
         <span>出力日: ${new Date().toLocaleDateString('ja-JP')}</span>
         <span>合同会社サンワテック</span>
       </div>
